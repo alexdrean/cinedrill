@@ -1,0 +1,10 @@
+name: Cinedrill
+version: "1.0"
+author: BullCheat
+main: com.alex00.Cinedrill.Cinedrill
+api-version: "1.15"
+commands:
+  drill:
+    description: Active / désactive la super pioche
+    permission: cinedrill.use
+    permission-message: "Vous n'avez pas la permission d'utiliser la super pioche"
