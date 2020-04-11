@@ -1,5 +1,6 @@
 package com.alex00.Cinedrill;
 
+import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -27,8 +28,10 @@ public class DrillEventsManager implements Listener {
 
     public static HashMap<UUID, BlockFace> lastInteract = new HashMap<>();
 
-    @EventHandler(priority = EventPriority.MONITOR)
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onPlayerMine(BlockBreakEvent e) {
+        if (isRecursive(Thread.currentThread().getStackTrace()))
+            return;
         if (canDrill(e.getPlayer())) {
             BlockFace lastFace = lastInteract.get(e.getPlayer().getUniqueId());
             if (lastFace == null) {
@@ -46,16 +49,25 @@ public class DrillEventsManager implements Listener {
                     if (!event.isCancelled()) {
                         block.breakNaturally(hand);
                         drilled++;
-                        damageTool(hand);
+                        if (e.getPlayer().getGameMode() != GameMode.CREATIVE)
+                            damageTool(hand);
                     }
                 }
             }
-            if (drilled != 0) {
+            if (drilled != 0 && e.getPlayer().getGameMode() != GameMode.CREATIVE) {
                 boolean success = Cinedrill.consumeItem(e.getPlayer(), 1, Material.IRON_NUGGET);
                 if (!success)
                     plugin.getLogger().warning("Could not consume super pickaxe consumable for " + e.getPlayer().getName());
             }
         }
+    }
+
+    private boolean isRecursive(StackTraceElement[] stackTrace) {
+        for (int i = 2; i < stackTrace.length; i++) {
+            if (stackTrace[i].getClassName().equals(DrillEventsManager.class.getName()))
+                return true;
+        }
+        return false;
     }
 
     private Block[] getBlocksAdjacentToFace(BlockFace face, Location location) {
@@ -68,7 +80,7 @@ public class DrillEventsManager implements Listener {
                     if (face.getModY() != 0 && y != 0) continue;
                     if (face.getModZ() != 0 && z != 0) continue;
                     if (x == 0 && y == 0 && z == 0) continue;
-                    blocks[i++] = location.add(x, y, z).getBlock();
+                    blocks[i++] = location.clone().add(x, y, z).getBlock();
                 }
             }
         }
